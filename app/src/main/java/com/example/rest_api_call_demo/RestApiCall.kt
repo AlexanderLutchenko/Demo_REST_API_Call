@@ -6,6 +6,7 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -92,6 +93,37 @@ class RestApiCall(private val context: Context, private var url: URL) {
         }
         //For testing purposes send a result to logs
         Log.i("JSON RESPONSE RESULT:", result)
+
+        //Step17 - Updates on how to deconstruct a JSON object and access its elements
+        //Create a JSON object holder
+        val jsonObject = JSONObject(result)
+        //Get specific JSON elements by their names
+        val message = jsonObject.optString("message")
+        val userId= jsonObject.optInt("user_id")
+        Log.i("Message and userID:", "$message + $userId")
+
+        //In case there is a JSON object inside a JSON object, this is the approach:
+        val profileDetailsObject = jsonObject.optJSONObject("profile_details")
+        //Use the received JSON object to access its details as in example above
+        val isProfileCompleted = profileDetailsObject?.optBoolean("is_profile_completed")
+        Log.i("Is profile completed:", "$isProfileCompleted")
+
+        //In case the JSON object contains a list of inner JSON objects:
+        val jsonListArray = jsonObject.optJSONArray("data_list")
+        Log.i("Data List Size", "${jsonListArray?.length()}")//only for the number of items in the list
+
+        //to get each individual JSON object in the list of JSON objects:
+        for(i in 0 until jsonListArray.length()){
+            Log.i("Value $i", "${jsonListArray[i]}") //only to display all the objects
+
+            val jsonObjectFromList = jsonListArray[i] as JSONObject
+            //access the content of each individual jsonObject from the list
+            val id = jsonObjectFromList.optInt("id")
+            val value= jsonObjectFromList.optString("value")
+            Log.i("id and value:", "$id + $value")
+        }
+        //Step17 -- END -- This is how elements of JSON object get accessed by deconstructing the JSON object
+
     }
 
     //Step8 Function to show progress dialog
