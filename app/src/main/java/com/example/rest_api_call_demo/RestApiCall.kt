@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.BufferedReader
+import java.io.DataOutputStream
 import java.io.IOException
 import java.io.InputStreamReader
 import java.lang.Exception
@@ -18,8 +19,16 @@ import java.net.URL
 //Step6 Create a helper-class to process a REST API Calls in background thread
 //It needs context to know at which activity to run the Process Bar Dialog
 
-class RestApiCall(private val context: Context, private var url: URL) {
+class RestApiCall(private val context: Context, private var url: URL){
 
+    //Add a secondary constructor to the class to give user an optional choice to add
+    //a username and password during class instantiation, in case a "POST" transaction is intended
+    private var username: String? = null
+    private var password: String? = null
+    constructor(context: Context, url: URL , username: String, password: String): this(context, url){
+        this.username = username
+        this.password = password
+    }
     //Step7 Var to hold the Dialog for Custom Progress Bar
     private lateinit var customProgressDialog: Dialog
 
@@ -48,7 +57,28 @@ class RestApiCall(private val context: Context, private var url: URL) {
             //Returns a URLConnection instance that represents a connection to remote object referred to by the URL
             connection = url.openConnection() as HttpURLConnection
             connection.doInput = true //doInput tells if dat is being Received(by default doInput will be true and doOutput false)
-            connection.doOutput = false //doOutput tells if data is being Sent
+            connection.doOutput = false //doOutput tells if data is being sent
+
+            //Step18 Send the POST Request (Separate Branch)
+            if (username!=null&&password!=null) {//proceeds only when user inputs data to send(POST)
+                connection.doOutput = true //doOutput tells if data is being sent
+                connection.instanceFollowRedirects =
+                    false //ignore redirections, skip connection instead
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.setRequestProperty("charset", "UTF-8")
+                connection.setRequestProperty("Accept", "application/json")
+                connection.useCaches = false
+
+                val writeDataOutputStream = DataOutputStream(connection.outputStream)
+                val jsonRequest = JSONObject() //Create a JSON object to utilise
+                jsonRequest.put("username", username)
+                jsonRequest.put("password", password)
+                writeDataOutputStream.writeBytes(jsonRequest.toString())
+                writeDataOutputStream.flush()
+                writeDataOutputStream.close()
+            }//Step18 -- END -- This is how sending POST Request is done
+
 
             val httpResult: Int = connection.responseCode // Check what is the status of connection
             if (httpResult == HttpURLConnection.HTTP_OK) { //if connection is successful, read the data
