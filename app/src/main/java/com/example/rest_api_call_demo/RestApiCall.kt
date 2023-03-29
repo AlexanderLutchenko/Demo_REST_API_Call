@@ -3,6 +3,7 @@ package com.example.rest_api_call_demo
 import android.app.Dialog
 import android.content.Context
 import android.util.Log
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -32,6 +33,11 @@ class RestApiCall(private val context: Context, private var url: URL){
     //Step7 Var to hold the Dialog for Custom Progress Bar
     private lateinit var customProgressDialog: Dialog
 
+    //prepare necessary variables for the class
+    private val stringBuilder = StringBuilder()
+    private lateinit var result: String
+    private lateinit var connection: HttpURLConnection
+    private var httpResult: Int? = null
 
     //Step10a Function to execute the helper-class object
     suspend fun execute(): String{
@@ -50,16 +56,13 @@ class RestApiCall(private val context: Context, private var url: URL){
 
     //Step12 Function that will get the API call result as a String
     private fun makeApiCall(): String {
-        //prepare necessary variables for the function
-        var result: String
-        var connection: HttpURLConnection? = null
         try {//try to establish a connection to the url
             //Returns a URLConnection instance that represents a connection to remote object referred to by the URL
             connection = url.openConnection() as HttpURLConnection
             connection.doInput = true //doInput tells if dat is being Received(by default doInput will be true and doOutput false)
             connection.doOutput = false //doOutput tells if data is being sent
 
-            //Step18 Send the POST Request (Separate Branch)
+            /*//Step18 Send the POST Request (Separate Branch)
             if (username!=null&&password!=null) {//proceeds only when user inputs data to send(POST)
                 connection.doOutput = true //doOutput tells if data is being sent
                 connection.instanceFollowRedirects =
@@ -77,14 +80,14 @@ class RestApiCall(private val context: Context, private var url: URL){
                 writeDataOutputStream.writeBytes(jsonRequest.toString())
                 writeDataOutputStream.flush()
                 writeDataOutputStream.close()
-            }//Step18 -- END -- This is how sending POST Request is done
+            }//Step18 -- END -- This is how sending POST Request is done*/
 
 
-            val httpResult: Int = connection.responseCode // Check what is the status of connection
+            httpResult = connection.responseCode // Check what is the status of connection
             if (httpResult == HttpURLConnection.HTTP_OK) { //if connection is successful, read the data
                 val inputStream = connection.inputStream
                 val reader = BufferedReader(InputStreamReader(inputStream))
-                val stringBuilder = StringBuilder()
+
                 var line: String?
                 try { //while reader has lines to read, also assign reader output (it) to "line" var, checking it's not null
                     while (reader.readLine().also { line = it } != null) {
@@ -110,21 +113,52 @@ class RestApiCall(private val context: Context, private var url: URL){
         } catch (e: Exception) { // If any other connection error
             result = "Error : " + e.message
         } finally { //Regardless of connection success, close the connection
-            connection?.disconnect()
+            connection.disconnect()
         }
         //Return result to the function
         return result
     }
 
     //Step11 Once the execution of helper-class object finished, remove the CustomProgressDialog, run other activities if necessary
-    private suspend fun afterCallFinish(result:String){
-        withContext(Main){
+    private suspend fun afterCallFinish(result:String) {
+        withContext(Main) {
             cancelProgressDialog()
         }
-        //For testing purposes send a result to logs
-        Log.i("JSON RESPONSE RESULT:", result)
+        //Step19.3 - Deconstruct JSON object using GSON Library
+        if (httpResult==HttpURLConnection.HTTP_OK && stringBuilder.isNotEmpty()){//check if there is a proper result from the REST call
+            val responseDataGSON = Gson().fromJson(result, ResponseDataGSON::class.java)
 
-        //Step17 - Updates on how to deconstruct a JSON object and access its elements
+            //Sample cod of regular JSON deconstruction approach(full code below Step17)
+
+            /*//Get specific JSON elements by their names
+        val message = jsonObject.optString("message")
+        val userId= jsonObject.optInt("user_id")
+        Log.i("Message and userID:", "$message + $userId")*/
+
+
+            //Now same action using GSON Library
+            val message = responseDataGSON.message
+            val userId = responseDataGSON.user_id
+            Log.i("Message and userID:", "$message + $userId")
+
+            //Continue with JSON object using GSON Library:
+            //In case there is a JSON object inside a JSON object, this is the approach:
+            //val profileDetails : ProfileDetails = responseDataGSON.profile_details
+            val isProfileCompleted = responseDataGSON.profile_details.is_profile_completed
+
+            Log.i("Data list size", "${responseDataGSON.data_list.size}")
+
+            for (i in responseDataGSON.data_list.indices) {
+                Log.i("Data_List item $i", "${responseDataGSON.data_list[i]}")
+
+                Log.i("Data_List item $i ID", responseDataGSON.data_list[i].id.toString())
+                Log.i("Data_List item $i Value", responseDataGSON.data_list[i].value)
+            }
+        } else {//For testing purposes send a result to logs
+            Log.i("JSON RESPONSE RESULT:", result)
+        }
+
+        /*//Step17 - Updates on how to deconstruct a JSON object and access its elements
         //Create a JSON object holder
         val jsonObject = JSONObject(result)
         //Get specific JSON elements by their names
@@ -152,7 +186,7 @@ class RestApiCall(private val context: Context, private var url: URL){
             val value= jsonObjectFromList.optString("value")
             Log.i("id and value:", "$id + $value")
         }
-        //Step17 -- END -- This is how elements of JSON object get accessed by deconstructing the JSON object
+        //Step17 -- END -- This is how elements of JSON object get accessed by deconstructing the JSON object*/
 
     }
 
