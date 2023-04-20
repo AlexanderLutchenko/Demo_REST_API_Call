@@ -15,7 +15,7 @@ import java.net.SocketTimeoutException
 import java.net.URL
 
 //Step6 Create a helper-class to process a REST API Calls in background thread
-//It needs context to know at which activity to run the Process Bar Dialog
+//It needs context to know at which activity to run the Progress Bar Dialog
 
 class RestApiCall(private val context: Context, private var url: URL) {
 
@@ -23,9 +23,9 @@ class RestApiCall(private val context: Context, private var url: URL) {
     private lateinit var customProgressDialog: Dialog
 
 
-    //Step10a Function to execute the helper-class object
+    //Step10 Function to execute the helper-class object
     suspend fun execute(): String{
-        //Step10b When the helper-class object executed, start with the CustomProgressDialog
+        //When the helper-class object executed, start with the CustomProgressDialog
         withContext(Main){
             showProgressDialog()
         }
@@ -34,7 +34,7 @@ class RestApiCall(private val context: Context, private var url: URL) {
         val result = makeApiCall()
         //Step14 Sent a result to closing function
         afterCallFinish(result)
-        //Step15 Return result of an REST API Call to an activity that utilised this helper-class
+        //Step15 Return result of a REST API Call to an activity that initiated a call to this helper-class
         return result
     }
 
@@ -43,10 +43,10 @@ class RestApiCall(private val context: Context, private var url: URL) {
         //prepare necessary variables for the function
         var result: String
         var connection: HttpURLConnection? = null
-        try {//try to establish a connection to the url
+        try {//try to establish a connection to the provided url
             //Returns a URLConnection instance that represents a connection to remote object referred to by the URL
             connection = url.openConnection() as HttpURLConnection
-            connection.doInput = true //doInput tells if dat is being Received(by default doInput will be true and doOutput false)
+            connection.doInput = true //doInput tells if data is being Received(by default doInput will be true and doOutput false)
             connection.doOutput = false //doOutput tells if data is being Sent
 
             val httpResult: Int = connection.responseCode // Check what is the status of connection
@@ -55,7 +55,7 @@ class RestApiCall(private val context: Context, private var url: URL) {
                 val reader = BufferedReader(InputStreamReader(inputStream))
                 val stringBuilder = StringBuilder()
                 var line: String?
-                try { //while reader has lines to read, also assign reader output (it) to "line" var, checking it's not null
+                try { //while reader has lines to read, assign reader output (it) to "line" var, checking it's not null
                     while (reader.readLine().also { line = it } != null) {
                         stringBuilder.append(line + "\n")
                     }
@@ -81,7 +81,7 @@ class RestApiCall(private val context: Context, private var url: URL) {
         } finally { //Regardless of connection success, close the connection
             connection?.disconnect()
         }
-        //Return result to the function
+        //Return result of the function
         return result
     }
 
@@ -102,7 +102,7 @@ class RestApiCall(private val context: Context, private var url: URL) {
         customProgressDialog.show()
     }
 
-    //Step9 Function to dismiss the progress dialog if it's visible
+    //Step9 Function to dismiss the progress dialog
     private fun cancelProgressDialog(){
         customProgressDialog.dismiss()
     }

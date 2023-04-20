@@ -18,9 +18,10 @@
         android:label="REST API Call Demo"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:usesCleartextTraffic="true"
+        tools:targetApi="m"
         android:supportsRtl="true"
         android:theme="@style/Theme.REST_API_Call_Demo"
-        tools:targetApi="m">
+        >
         <activity
             android:name=".MainActivity"
             android:exported="true">
